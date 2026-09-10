@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Receipt Savior</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <meta name="theme-color" content="#ffffff" />
+  <script src="https://accounts.google.com/gsi/client" defer></script>
+</head>
+<body>
+  <h1>Receipt Savior</h1>
+
+  <button id="sign-in-button">Sign in with Google</button>
+
+  <section id="upload-section" hidden>
+    <label for="receipt-input">Scan a receipt</label><br />
+    <input type="file" id="receipt-input" accept="image/*" capture="environment" />
+  </section>
+
+  <p id="status"></p>
+
+  <div id="results"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
