@@ -1,0 +1,3 @@
+- Never merge PRs.
+- Always create branches and PRs.
+- Use Conventional Commits and Semver; keep version bumps tracked accordingly.
