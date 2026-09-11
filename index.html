@@ -6,22 +6,30 @@
   <title>Receipt Savior</title>
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)" />
   <script src="https://accounts.google.com/gsi/client" defer></script>
 </head>
 <body>
-  <h1>Receipt Savior</h1>
+  <header class="app-header">
+    <h1>Receipt Savior</h1>
+    <button id="theme-toggle" type="button" class="button button-icon" aria-label="Toggle color theme">◐</button>
+  </header>
 
-  <button id="sign-in-button">Sign in with Google</button>
+  <main>
+    <button id="sign-in-button" type="button" class="button button-primary">Sign in with Google</button>
 
-  <section id="upload-section" hidden>
-    <label for="receipt-input">Scan a receipt</label><br />
-    <input type="file" id="receipt-input" accept="image/*" capture="environment" />
-  </section>
+    <section id="upload-section" class="card" hidden>
+      <label for="receipt-input">Scan a receipt</label>
+      <input type="file" id="receipt-input" accept="image/*" capture="environment" />
+    </section>
 
-  <p id="status"></p>
+    <p id="status" role="status"></p>
 
-  <div id="results"></div>
+    <div id="results-wrapper">
+      <div id="results"></div>
+    </div>
+  </main>
 
   <script type="module" src="/src/main.ts"></script>
 </body>
