@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { extractReceiptItems } from "./lib/gemini";
-import { ensureFolder, uploadImage } from "./lib/drive";
-import { ensureSheet, appendItems } from "./lib/sheets";
+import { extractReceiptItems } from "./lib/gemini.js";
+import { ensureFolder, uploadImage } from "./lib/drive.js";
+import { ensureSheet, appendItems } from "./lib/sheets.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {

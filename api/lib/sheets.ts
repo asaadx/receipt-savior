@@ -1,4 +1,4 @@
-import type { ReceiptItem } from "./gemini";
+import type { ReceiptItem } from "./gemini.js";
 
 const SHEET_NAME = "Receipt Savior";
 const SPREADSHEET_MIME = "application/vnd.google-apps.spreadsheet";
