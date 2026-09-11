@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { extractReceiptItems } from "./lib/gemini.js";
+import { getExtractionProvider } from "./lib/providers/index.js";
 import { ensureFolder, uploadImage } from "./lib/drive.js";
 import { ensureSheet, appendItems } from "./lib/sheets.js";
+import { buildReceiptFilename } from "./lib/filename.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -16,14 +17,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const items = await extractReceiptItems(imageBase64, mimeType);
-    const folderId = await ensureFolder(accessToken);
-    const spreadsheetId = await ensureSheet(accessToken, folderId);
+    const items = await getExtractionProvider()(imageBase64, mimeType);
+    if (items.length === 0) {
+      throw new Error("No line items could be extracted from this receipt");
+    }
 
-    await Promise.all([
-      uploadImage(accessToken, folderId, imageBase64, mimeType, `receipt-${Date.now()}`),
-      appendItems(accessToken, spreadsheetId, items),
+    const folderId = await ensureFolder(accessToken);
+    const fileName = buildReceiptFilename(items[0], mimeType);
+
+    const [{ spreadsheetId, sheetId }, uploaded] = await Promise.all([
+      ensureSheet(accessToken, folderId),
+      uploadImage(accessToken, folderId, imageBase64, mimeType, fileName),
     ]);
+
+    await appendItems(accessToken, spreadsheetId, sheetId, items, uploaded.webViewLink);
 
     res.status(200).json({ items });
   } catch (err) {

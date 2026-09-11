@@ -1,15 +1,15 @@
-import type { ReceiptItem } from "./gemini.js";
+import type { ReceiptItem } from "./schema.js";
 
 const SHEET_NAME = "Receipt Savior";
 const SPREADSHEET_MIME = "application/vnd.google-apps.spreadsheet";
 const HEADER_ROW = [
-  "Name",
-  "Quantity",
-  "Unit Price",
-  "Total Price",
-  "Category",
+  "Receipt #",
   "Vendor",
   "Date",
+  "Name",
+  "Quantity",
+  "Total Price",
+  "Category",
   "Subtotal",
   "HST",
   "Total Tax",
@@ -38,53 +38,110 @@ async function sheetsFetch(accessToken: string, path: string, init: RequestInit 
   return res.json();
 }
 
+async function getFirstSheetId(accessToken: string, spreadsheetId: string): Promise<number> {
+  const data = (await sheetsFetch(accessToken, `/spreadsheets/${spreadsheetId}?fields=sheets.properties.sheetId`)) as {
+    sheets?: Array<{ properties?: { sheetId?: number } }>;
+  };
+  const sheetId = data.sheets?.[0]?.properties?.sheetId;
+  if (sheetId === undefined) throw new Error("Could not determine sheetId for spreadsheet");
+  return sheetId;
+}
+
 /** Finds (or creates, with a header row) the "Receipt Savior" sheet inside the given folder. */
-export async function ensureSheet(accessToken: string, folderId: string): Promise<string> {
+export async function ensureSheet(
+  accessToken: string,
+  folderId: string
+): Promise<{ spreadsheetId: string; sheetId: number }> {
   const query = encodeURIComponent(
     `name='${SHEET_NAME}' and mimeType='${SPREADSHEET_MIME}' and '${folderId}' in parents and trashed=false`
   );
   const found = await driveFetch(accessToken, `/files?q=${query}&fields=files(id,name)`);
-  if (found.files?.length) return found.files[0].id;
 
-  const created = await driveFetch(accessToken, "/files", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: SHEET_NAME, mimeType: SPREADSHEET_MIME, parents: [folderId] }),
-  });
+  let spreadsheetId: string;
+  if (found.files?.length) {
+    spreadsheetId = found.files[0].id;
+  } else {
+    const created = await driveFetch(accessToken, "/files", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: SHEET_NAME, mimeType: SPREADSHEET_MIME, parents: [folderId] }),
+    });
+    spreadsheetId = created.id;
 
-  await sheetsFetch(accessToken, `/spreadsheets/${created.id}/values/A1:K1?valueInputOption=RAW`, {
-    method: "PUT",
-    body: JSON.stringify({ values: [HEADER_ROW] }),
-  });
+    await sheetsFetch(accessToken, `/spreadsheets/${spreadsheetId}/values/A1:K1?valueInputOption=RAW`, {
+      method: "PUT",
+      body: JSON.stringify({ values: [HEADER_ROW] }),
+    });
+  }
 
-  return created.id;
+  const sheetId = await getFirstSheetId(accessToken, spreadsheetId);
+  return { spreadsheetId, sheetId };
 }
 
-/** Appends one row per receipt item to the sheet. */
+/** Parses a Sheets API `updatedRange` (e.g. `'Receipt Savior'!A5:K7`) into zero-based row indices. */
+function parseAppendedRowRange(updatedRange: string): { startIndex: number; endIndex: number } {
+  const match = updatedRange.match(/![A-Z]+(\d+):[A-Z]+(\d+)$/);
+  if (!match) throw new Error(`Could not parse appended row range: ${updatedRange}`);
+  const firstRow = Number(match[1]);
+  const lastRow = Number(match[2]);
+  return { startIndex: firstRow - 1, endIndex: lastRow };
+}
+
+/**
+ * Appends one row per receipt item, grouped under a single collapsible
+ * Sheets row group. Receipt-wide values (receipt #, vendor, date, subtotal,
+ * HST, total tax, grand total) are written once on the group's first row and
+ * left blank on the rest, so summing any receipt-wide column never
+ * overcounts. The receipt # cell is a hyperlink to the uploaded image.
+ */
 export async function appendItems(
   accessToken: string,
   spreadsheetId: string,
-  items: ReceiptItem[]
-) {
-  const values = items.map((item) => [
-    item.name,
-    item.quantity,
-    item.unitPrice,
-    item.totalPrice,
-    item.category,
-    item.vendor,
-    item.date,
-    item.subtotal,
-    item.hst,
-    item.totalTax,
-    item.grandTotal,
-  ]);
-  await sheetsFetch(
+  sheetId: number,
+  items: ReceiptItem[],
+  imageLink: string
+): Promise<void> {
+  if (items.length === 0) return;
+
+  const [first, ...rest] = items;
+  const receiptLabel = first.receiptNumber ? first.receiptNumber.replace(/"/g, '""') : "Receipt";
+  const receiptCell = `=HYPERLINK("${imageLink}", "${receiptLabel}")`;
+
+  const values = [
+    [
+      receiptCell,
+      first.vendor,
+      first.date,
+      first.name,
+      first.quantity,
+      first.totalPrice,
+      first.category,
+      first.subtotal,
+      first.hst ?? "",
+      first.totalTax,
+      first.grandTotal,
+    ],
+    ...rest.map((item) => ["", "", "", item.name, item.quantity, item.totalPrice, item.category, "", "", "", ""]),
+  ];
+
+  const response = (await sheetsFetch(
     accessToken,
-    `/spreadsheets/${spreadsheetId}/values/A:K:append?valueInputOption=RAW`,
-    {
-      method: "POST",
-      body: JSON.stringify({ values }),
-    }
-  );
+    `/spreadsheets/${spreadsheetId}/values/A:K:append?valueInputOption=USER_ENTERED`,
+    { method: "POST", body: JSON.stringify({ values }) }
+  )) as { updates?: { updatedRange?: string } };
+
+  const requests: unknown[] = [
+    { autoResizeDimensions: { dimensions: { sheetId, dimension: "COLUMNS", startIndex: 0, endIndex: HEADER_ROW.length } } },
+  ];
+
+  const updatedRange = response.updates?.updatedRange;
+  if (updatedRange && items.length > 1) {
+    const { startIndex, endIndex } = parseAppendedRowRange(updatedRange);
+    requests.unshift({ addDimensionGroup: { range: { sheetId, dimension: "ROWS", startIndex, endIndex } } });
+  }
+
+  await sheetsFetch(accessToken, `/spreadsheets/${spreadsheetId}:batchUpdate`, {
+    method: "POST",
+    body: JSON.stringify({ requests }),
+  });
 }
