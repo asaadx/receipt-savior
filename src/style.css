@@ -1,27 +1,269 @@
+/*
+ * Grayscale palette matching shadcn/ui's default "neutral" theme (same HSL
+ * tokens: background/foreground, card, muted, border, primary, secondary,
+ * destructive). Raw H/S/L triplets wrapped in hsl(var(--x)) at use sites,
+ * matching shadcn's own convention.
+ */
+:root {
+  color-scheme: light;
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --border: 240 5.9% 90%;
+  --primary: 240 5.9% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --border: 240 3.7% 15.9%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --border: 240 5.9% 90%;
+  --primary: 240 5.9% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --border: 240 3.7% 15.9%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-  font-family: system-ui, sans-serif;
-  max-width: 480px;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  margin: 0;
+  min-height: 100dvh;
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.app-header {
+  max-width: 640px;
   margin: 0 auto;
   padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-header h1 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.button {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border-radius: var(--radius);
+  padding: 0.6rem 1rem;
+}
+
+.button-icon {
+  border-radius: 999px;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  background: hsl(var(--card));
+}
+
+/*
+ * Google's own branding guidelines require the exact fill/text colors below
+ * (their "Neutral" light-theme and "Dark" dark-theme button specs) and the
+ * unaltered standard-color "G" logo — this is one of the few places brand
+ * rules override the app's own palette rather than following it.
+ * https://developers.google.com/identity/branding-guidelines
+ */
+.google-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.625rem 0.75rem 0.625rem 0.75rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  background: #f2f2f2;
+  color: #1f1f1f;
+}
+
+@media (prefers-color-scheme: dark) {
+  .google-button {
+    background: #131314;
+    color: #e3e3e3;
+    border: 1px solid #8e918f;
+  }
+}
+
+:root[data-theme="dark"] .google-button {
+  background: #131314;
+  color: #e3e3e3;
+  border: 1px solid #8e918f;
+}
+
+:root[data-theme="light"] .google-button {
+  background: #f2f2f2;
+  color: #1f1f1f;
+  border: none;
+}
+
+.google-button svg {
+  flex: none;
+}
+
+.card {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.card label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+input[type="file"] {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.9rem;
+}
+
+input[type="file"]::file-selector-button {
+  font: inherit;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border-radius: var(--radius);
+  padding: 0.5rem 0.9rem;
+  margin-right: 0.75rem;
+  cursor: pointer;
+}
+
+#status {
+  margin: 0;
+  font-size: 0.9rem;
+  color: hsl(var(--muted-foreground));
+  min-height: 1.2em;
+}
+
+#status[data-state="error"] {
+  color: hsl(var(--destructive));
+}
+
+#results-wrapper {
+  overflow-x: auto;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--card));
+}
+
+#results-wrapper:empty,
+#results-wrapper:has(> #results:empty) {
+  display: none;
 }
 
 table {
   border-collapse: collapse;
   width: 100%;
-  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 th,
 td {
-  border: 1px solid #ccc;
-  padding: 0.4rem;
+  padding: 0.55rem 0.75rem;
   text-align: left;
+  border-bottom: 1px solid hsl(var(--border));
 }
 
-#upload-section {
-  margin-top: 1rem;
+th {
+  position: sticky;
+  top: 0;
+  background: hsl(var(--card));
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-#status {
-  font-style: italic;
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: hsl(var(--muted));
 }
