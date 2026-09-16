@@ -108,15 +108,20 @@ receiptInput.addEventListener("change", async () => {
 
   try {
     const imageBase64 = await readFileAsBase64(file);
-    const response = await fetch("/api/process-receipt", {
+    const response = await fetch("/api/receipts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ accessToken, imageBase64, mimeType: file.type }),
     });
 
     if (!response.ok) {
+      const failure = (await response.json().catch(() => null)) as
+        | { error?: string; details?: string[]; requestId?: string }
+        | null;
+      const message = failure?.error ?? `Request failed with status ${response.status}`;
       status.dataset.state = "error";
-      status.textContent = await response.text();
+      // The request id correlates with the server log for internal faults.
+      status.textContent = failure?.requestId ? `${message} (ref ${failure.requestId})` : message;
       return;
     }
 

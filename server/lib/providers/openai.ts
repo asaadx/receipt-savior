@@ -3,16 +3,12 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { ExtractionResultSchema } from "../../../shared/schema.js";
 import { EXTRACTION_PROMPT } from "./prompt.js";
 import type { ExtractionProvider } from "./types.js";
-
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o-2024-08-06";
+import { config } from "../../config.js";
 
 export const extractWithOpenAI: ExtractionProvider = async (imageBase64, mimeType) => {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
-
-  const client = new OpenAI({ apiKey });
+  const client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
   const completion = await client.chat.completions.parse({
-    model: MODEL,
+    model: config.OPENAI_MODEL,
     messages: [
       {
         role: "user",

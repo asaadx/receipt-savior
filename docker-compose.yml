@@ -1,0 +1,61 @@
+services:
+  # Management UI on http://localhost:15672 (receipt/receipt). This is the main
+  # observability surface for the pipeline: retry tiers filling and draining,
+  # and the DLQ collecting poison messages, are all visible there.
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: receipt-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: receipt
+      RABBITMQ_DEFAULT_PASS: receipt
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # appendonly so idempotency keys survive a container restart; without it a
+  # restart mid-pipeline could let an already-completed receipt be reprocessed.
+  redis:
+    image: redis:7-alpine
+    container_name: receipt-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: receipt-postgres
+    environment:
+      POSTGRES_USER: receipt
+      POSTGRES_PASSWORD: receipt
+      POSTGRES_DB: receipt_savior
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U receipt -d receipt_savior"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  rabbitmq-data:
+  redis-data:
+  postgres-data:

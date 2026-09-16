@@ -2,8 +2,7 @@ import { z } from "zod";
 import { ExtractionResultSchema, ReceiptItemSchema } from "../../../shared/schema.js";
 import { EXTRACTION_PROMPT } from "./prompt.js";
 import type { ExtractionProvider } from "./types.js";
-
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+import { config } from "../../config.js";
 
 type GeminiSchema = Record<string, unknown>;
 
@@ -56,11 +55,8 @@ const RESPONSE_SCHEMA: GeminiSchema = {
 };
 
 export const extractWithGemini: ExtractionProvider = async (imageBase64, mimeType) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
-
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${config.GEMINI_MODEL}:generateContent?key=${config.GEMINI_API_KEY}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
