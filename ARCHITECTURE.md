@@ -23,7 +23,7 @@ connection); moving to a queue solves the reliability limits.
 2. Server stores the refresh token; provisions the Drive folder + Sheet if absent; persists both IDs.
 3. User scans a receipt — 1 to 3 images for long receipts.
 4. API returns **presigned S3 PUT URLs**; the browser uploads directly to S3.
-5. API checks quota and publishes a job carrying **S3 keys, never image bytes**.
+5. API publishes a job carrying **S3 keys, never image bytes**.
 6. Worker claims the job (`prefetch=1`), guards on a Redis idempotency key.
 7. Worker fetches images, sends **all pages in one Gemini call**, validates with Zod.
 8. Worker copies the image to Drive, appends rows to the Sheet, acks.
@@ -49,8 +49,8 @@ from monopolising Gemini's free-tier quota.
 | `ratelimit:gemini` | Shared limiter across workers | rolling 60s |
 
 **Postgres** — the system of record: users, Google refresh tokens (encrypted at rest), provisioned
-`folderId`/`spreadsheetId`, job history, Stripe customer and usage state. Not Redis: refresh-token or
-billing-state loss is unacceptable, and Redis is memory-first with eviction.
+`folderId`/`spreadsheetId`, and job history. Not Redis: losing a refresh token forces the user to
+re-consent, and Redis is memory-first with eviction.
 
 Storing `folderId`/`spreadsheetId` also retires two `parking_lot.md` entries — IDs are stable across
 renames, so the current name-based Drive lookup in `api/lib/drive.ts` is no longer needed.
@@ -108,20 +108,25 @@ This changes the `ExtractionProvider` contract in `api/lib/providers/types.ts` f
 
 Free tier: 10 RPM / 1,500 RPD / 250k TPM on Flash. Throughput is capped by Gemini, not the broker.
 
-## Billing
+## Scope
 
-Free monthly quota, then metered overage via Stripe. Quota is checked at **enqueue** time, so a
-rejected receipt never consumes pipeline resources. Counters live in Redis for speed and are
-reconciled against Postgres, which remains authoritative. Stripe webhooks are handled idempotently
-(event IDs deduped) since Stripe retries deliveries.
+**No payments and no deployment.** Both were considered and cut: a paywall on an unfinished system is
+premature, and deploying teaches paperwork (domain, privacy policy, Google OAuth verification) rather
+than engineering. The project is open source and runs locally.
 
-## Deployment
+This costs nothing in substance — the pipeline, its failure handling, and every technology decision
+above are unaffected.
 
-Development runs RabbitMQ, Redis, and Postgres via Docker Compose: no free-tier caps, no idle
-reclamation, no signup.
+## Running it
 
-Broker, cache, and store sit behind interfaces so the hosting decision stays reversible. Findings if
-this is ever deployed:
+RabbitMQ, Redis, and Postgres run via Docker Compose: no free-tier caps, no idle reclamation, no
+signup. The RabbitMQ management UI on `localhost:15672` is the primary observability surface — retry
+tiers filling and draining, and the DLQ accumulating poison messages, are directly visible there.
+
+Contributors need their own Google Cloud OAuth client and Gemini API key; see `README.md`.
+
+Broker, cache, and store sit behind interfaces, so the decision stays reversible. Findings from
+costing a deployment, kept because they explain the local-first choice:
 
 - **No free always-on worker host exists.** Fly.io dropped its free tier; Render free web services
   sleep after 15min and background workers are paid-only; Koyeb closed free signups and bars worker
@@ -129,22 +134,25 @@ this is ever deployed:
 - **Oracle Always Free is a trap here.** Halved to 2 OCPU/12GB on 2026-06-15, and idle instances are
   reclaimed when p95 CPU, network, and memory all stay under 20% for 7 days — exactly a low-traffic
   worker's profile.
-- Free managed tiers that do fit: CloudAMQP Little Lemur (1M msgs/mo, 20 connections, **28-day idle
-  queue deletion** — always re-declare topology on connect), Upstash Redis (256MB, 500k cmds/mo),
-  Neon Postgres (0.5GB, scale-to-zero at 5min, no hard pause — unlike Supabase, which pauses free
-  projects after 7 days idle and needs manual resume).
+- Free managed tiers that would fit: CloudAMQP Little Lemur (1M msgs/mo, 20 connections, **28-day
+  idle queue deletion** — always re-declare topology on connect), Upstash Redis (256MB, 500k
+  cmds/mo), Neon Postgres (0.5GB, scale-to-zero at 5min, no hard pause — unlike Supabase, which
+  pauses free projects after 7 days idle and needs manual resume).
 
 S3 is retained over Cloudflare R2 despite R2's better economics: S3's free-tier request caps
-(2,000 PUT/mo) only bind at real user volume.
+(2,000 PUT/mo) only bind at real user volume, which a local project never reaches.
+
+Because the app stays unpublished, its OAuth consent screen stays in "Testing", where Google expires
+refresh tokens after **7 days**. The auth layer must therefore treat a rejected refresh token as a
+normal condition and prompt re-consent, not as an error.
 
 ## Phases
 
-1. **Express migration** — port Vercel handlers to an Express app; Docker Compose for RabbitMQ,
+1. **Express migration** — port the Vercel handler to an Express app; Docker Compose for RabbitMQ,
    Redis, Postgres.
 2. **Auth rewrite** — authorization-code flow, refresh tokens in Postgres, Redis token cache,
-   `drive.file`-only scope.
+   `drive.file`-only scope, re-consent on refresh failure.
 3. **S3 ingest** — presigned PUT, multi-image upload UI, lifecycle expiry.
 4. **Queue** — topology, publisher, worker with manual ack and `prefetch=1`.
 5. **Reliability** — idempotency keys, retry ladder, DLQ, Gemini rate limiter.
 6. **Multi-page extraction** — provider contract takes an image array.
-7. **Billing** — Stripe quota + metered overage, idempotent webhooks.
