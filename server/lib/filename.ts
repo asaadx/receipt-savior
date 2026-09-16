@@ -1,4 +1,4 @@
-import type { ReceiptItem } from "./schema.js";
+import type { ReceiptItem } from "../../shared/schema.js";
 
 const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   "image/jpeg": "jpg",

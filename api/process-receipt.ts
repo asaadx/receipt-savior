@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getExtractionProvider } from "./lib/providers/index.js";
-import { ensureFolder, uploadImage } from "./lib/drive.js";
-import { ensureSheet, appendItems } from "./lib/sheets.js";
-import { buildReceiptFilename } from "./lib/filename.js";
+import { getExtractionProvider } from "../server/lib/providers/index.js";
+import { ensureFolder, uploadImage } from "../server/lib/drive.js";
+import { ensureSheet, appendItems } from "../server/lib/sheets.js";
+import { buildReceiptFilename } from "../server/lib/filename.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {

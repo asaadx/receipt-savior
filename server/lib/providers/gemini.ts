@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ExtractionResultSchema, ReceiptItemSchema } from "../schema.js";
+import { ExtractionResultSchema, ReceiptItemSchema } from "../../../shared/schema.js";
 import { EXTRACTION_PROMPT } from "./prompt.js";
 import type { ExtractionProvider } from "./types.js";
 

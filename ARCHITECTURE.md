@@ -53,7 +53,7 @@ from monopolising Gemini's free-tier quota.
 re-consent, and Redis is memory-first with eviction.
 
 Storing `folderId`/`spreadsheetId` also retires two `parking_lot.md` entries — IDs are stable across
-renames, so the current name-based Drive lookup in `api/lib/drive.ts` is no longer needed.
+renames, so the current name-based Drive lookup in `server/lib/drive.ts` is no longer needed.
 
 ## Queue topology
 
@@ -103,8 +103,8 @@ Two deployment constraints:
 One Gemini call per receipt with every page attached as a separate part — page 2 carries no vendor or
 date, so pages must share one context. Also 1 request against quota instead of 3.
 
-This changes the `ExtractionProvider` contract in `api/lib/providers/types.ts` from
-`(imageBase64, mimeType)` to an array of images. `api/lib/schema.ts` stays the single source of truth.
+This changes the `ExtractionProvider` contract in `server/lib/providers/types.ts` from
+`(imageBase64, mimeType)` to an array of images. `shared/schema.ts` stays the single source of truth.
 
 Free tier: 10 RPM / 1,500 RPD / 250k TPM on Flash. Throughput is capped by Gemini, not the broker.
 

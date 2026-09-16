@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
-import { ExtractionResultSchema } from "../schema.js";
+import { ExtractionResultSchema } from "../../../shared/schema.js";
 import { EXTRACTION_PROMPT } from "./prompt.js";
 import type { ExtractionProvider } from "./types.js";
 
