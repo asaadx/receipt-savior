@@ -26,14 +26,14 @@ export async function ensureFolder(accessToken: string): Promise<string> {
   return created.id;
 }
 
-/** Uploads the receipt image into the given folder. */
+/** Uploads the receipt image into the given folder, returning its id and viewable link. */
 export async function uploadImage(
   accessToken: string,
   folderId: string,
   imageBase64: string,
   mimeType: string,
   fileName: string
-) {
+): Promise<{ id: string; webViewLink: string }> {
   const boundary = "receipt_savior_boundary";
   const metadata = { name: fileName, parents: [folderId] };
   const body =
@@ -47,7 +47,7 @@ export async function uploadImage(
     `--${boundary}--`;
 
   const res = await fetch(
-    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
     {
       method: "POST",
       headers: {
