@@ -1,3 +1,5 @@
 - Never merge PRs.
 - Always create branches and PRs.
 - Use Conventional Commits and Semver; keep version bumps tracked accordingly.
+- Update `STRUCTURE.md` in the same PR that moves, adds, or removes files.
+- Keep comments to one or two lines; explain rationale in the commit message.
