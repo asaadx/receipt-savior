@@ -32,9 +32,6 @@ export function initSignIn(onSignedIn: () => void): void {
     tokenClient!.requestAccessToken();
   });
 
-  // Best-effort silent reacquisition from the user's existing Google session,
-  // so returning visitors aren't forced to click "Sign in" every time. No-ops
-  // (leaving the sign-in button visible) if the browser blocks it or there's
-  // no prior consent.
+  // Silent reacquisition for returning visitors; no-ops without prior consent.
   tokenClient.requestAccessToken({ prompt: "" });
 }

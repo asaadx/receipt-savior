@@ -13,19 +13,8 @@ export const CIBC_CATEGORIES = [
   "Other",
 ] as const;
 
-/**
- * Single source of truth for the shape of an extracted receipt line item.
- *
- * Every provider adapter (Gemini, OpenAI, ...) must convert this schema into
- * its own structured-output dialect rather than hand-maintaining a parallel
- * copy. `unitPrice` is intentionally absent: it's derivable from
- * `totalPrice / quantity` and isn't needed for expense/tax record-keeping.
- *
- * Fields marked "repeated for every item" describe receipt-wide values (not
- * per-item values); the model repeats them identically across every line
- * item on the same receipt so each row is self-contained. The Sheets layer
- * is responsible for only rendering them once per receipt group.
- */
+// Canonical line item; provider adapters convert it into their own dialect.
+// Receipt-wide fields repeat on every item so Sheets can group and blank them.
 export const ReceiptItemSchema = z.object({
   name: z.string().describe("The line item's name, as printed on the receipt."),
   quantity: z.number().describe("Quantity purchased for this line item."),

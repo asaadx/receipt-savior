@@ -87,13 +87,8 @@ function parseAppendedRowRange(updatedRange: string): { startIndex: number; endI
   return { startIndex: firstRow - 1, endIndex: lastRow };
 }
 
-/**
- * Appends one row per receipt item, grouped under a single collapsible
- * Sheets row group. Receipt-wide values (receipt #, vendor, date, subtotal,
- * HST, total tax, grand total) are written once on the group's first row and
- * left blank on the rest, so summing any receipt-wide column never
- * overcounts. The receipt # cell is a hyperlink to the uploaded image.
- */
+// One row per item in a collapsible group. Receipt-wide values are written
+// only on the first row, so summing a column never overcounts.
 export async function appendItems(
   accessToken: string,
   spreadsheetId: string,

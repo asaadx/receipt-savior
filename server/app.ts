@@ -3,11 +3,8 @@ import express, { type ErrorRequestHandler } from "express";
 import { receiptsRouter } from "./routes/receipts.js";
 import { AppError } from "./lib/errors.js";
 
-/**
- * Logs the real fault server-side and returns a generic message to the client,
- * correlated by request id. Only `AppError` messages are considered safe to
- * expose (see `lib/errors.ts`).
- */
+// Logs the real fault server-side, returns a generic message correlated by
+// request id. Only AppError messages are safe to expose.
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof AppError) {
     res.status(err.status).json({ error: err.message });
@@ -25,9 +22,8 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 export function createApp() {
   const app = express();
 
-  // 25mb because the phase-1 flow still posts base64 image data inline; Express
-  // defaults to 100kb, which every real receipt exceeds. Phase 3 uploads direct
-  // to S3 and this drops back to the default.
+  // Phase 1 posts base64 images inline; the 100kb default rejects every
+  // receipt. Drops back once Phase 3 uploads to S3.
   app.use(express.json({ limit: "25mb" }));
 
   app.get("/healthz", (_req, res) => {

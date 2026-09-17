@@ -1,7 +1,5 @@
 services:
-  # Management UI on http://localhost:15672 (receipt/receipt). This is the main
-  # observability surface for the pipeline: retry tiers filling and draining,
-  # and the DLQ collecting poison messages, are all visible there.
+  # Management UI on http://localhost:15672 (receipt/receipt).
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: receipt-rabbitmq
@@ -20,8 +18,7 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # appendonly so idempotency keys survive a container restart; without it a
-  # restart mid-pipeline could let an already-completed receipt be reprocessed.
+  # appendonly so idempotency keys survive a restart.
   redis:
     image: redis:7-alpine
     container_name: receipt-redis

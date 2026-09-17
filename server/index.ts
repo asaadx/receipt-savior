@@ -1,16 +1,30 @@
 import { createApp } from "./app.js";
 import { config } from "./config.js";
 
-const server = createApp().listen(config.PORT, () => {
-  console.log(`API listening on http://localhost:${config.PORT}`);
+// Loopback keeps the API off the LAN; Vite proxies to it from this machine.
+const HOST = "127.0.0.1";
+
+const server = createApp().listen(config.PORT, HOST);
+
+// Express fires the listen callback even when the bind failed (address() null
+// inside it), so readiness comes from the event instead.
+server.on("listening", () => {
+  const address = server.address();
+  const port = typeof address === "object" && address !== null ? address.port : config.PORT;
+  console.log(`API listening on http://${HOST}:${port}`);
 });
 
-/**
- * Graceful shutdown: stop accepting connections and let in-flight requests
- * finish. Phase 4 closes the RabbitMQ channel here too — a consumer that dies
- * without closing its channel leaves unacked messages waiting on the broker's
- * heartbeat timeout instead of being redelivered immediately.
- */
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `Port ${config.PORT} is already in use by another process.\n` +
+        `Set PORT in .env to a free port, then restart.`
+    );
+    process.exit(1);
+  }
+  throw err;
+});
+
 const SHUTDOWN_GRACE_MS = 10_000;
 
 let shuttingDown = false;
@@ -22,9 +36,8 @@ function shutdown(signal: string) {
 
   console.log(`${signal} received, shutting down.`);
 
-  // Backstop only, for a close() that never completes. Unref'd so it cannot
-  // itself keep the process alive, and deliberately never cleared: the success
-  // path exits explicitly below, so a pending timer is harmless.
+  // Backstop for a close() that never completes. Unref'd so it can't hold the
+  // process open.
   const forceExit = setTimeout(() => {
     console.error(`Shutdown exceeded ${SHUTDOWN_GRACE_MS}ms; forcing exit.`);
     process.exit(1);
@@ -37,13 +50,8 @@ function shutdown(signal: string) {
       process.exitCode = 1;
     }
 
-    // Exits explicitly instead of waiting for the event loop to drain, because
-    // in development tsx's module loader keeps a handle open and the process
-    // would hang until the backstop above fires.
-    //
-    // The empty write's callback is what makes this safe: process.exit()
-    // abandons pending async stdout writes, so exiting directly silently drops
-    // these lines whenever stdout is a pipe or file rather than a TTY.
+    // tsx's loader keeps a handle open, so exit explicitly. The empty write's
+    // callback flushes first: process.exit() drops pending stdout writes.
     process.stdout.write("", () => process.exit(process.exitCode ?? 0));
   });
 }
