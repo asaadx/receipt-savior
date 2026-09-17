@@ -78,10 +78,8 @@ server/    Express API (routes, config, Google + model adapters)
 shared/    Zod schema shared by frontend and backend
 ```
 
-`shared/schema.ts` is the single source of truth for the shape of an extracted
-line item. Each provider adapter translates that Zod schema into its own
-structured-output dialect rather than duplicating the field list, so adding a
-field means editing one file.
+[STRUCTURE.md](STRUCTURE.md) maps every file, the request flow, and where to
+make a given change.
 
 ## License
 
