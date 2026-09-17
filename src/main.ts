@@ -1,6 +1,6 @@
 import "./style.css";
 import { getAccessToken, initSignIn } from "./auth";
-import type { ReceiptItem } from "../api/lib/schema.js";
+import type { ReceiptItem } from "../shared/schema.js";
 
 interface ProcessReceiptResponse {
   items: ReceiptItem[];

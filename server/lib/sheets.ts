@@ -1,4 +1,4 @@
-import type { ReceiptItem } from "./schema.js";
+import type { ReceiptItem } from "../../shared/schema.js";
 
 const SHEET_NAME = "Receipt Savior";
 const SPREADSHEET_MIME = "application/vnd.google-apps.spreadsheet";

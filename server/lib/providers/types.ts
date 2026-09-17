@@ -1,4 +1,4 @@
-import type { ReceiptItem } from "../schema.js";
+import type { ReceiptItem } from "../../../shared/schema.js";
 
 /**
  * A provider extracts structured receipt line items from a receipt image.
