@@ -1,18 +1,18 @@
 import { extractWithGemini } from "./gemini.js";
 import { extractWithOpenAI } from "./openai.js";
 import type { ExtractionProvider } from "./types.js";
+import { config } from "../../config.js";
 
-const PROVIDERS: Record<string, ExtractionProvider> = {
+/**
+ * Keyed by the `LLM_PROVIDER` enum, so adding a provider to the config schema
+ * without registering it here is a type error rather than a runtime failure.
+ */
+const PROVIDERS: Record<typeof config.LLM_PROVIDER, ExtractionProvider> = {
   gemini: extractWithGemini,
   openai: extractWithOpenAI,
 };
 
-/** Selects the extraction provider via `LLM_PROVIDER` (defaults to Gemini). */
+/** Selects the extraction provider validated at startup by `config.ts`. */
 export function getExtractionProvider(): ExtractionProvider {
-  const name = process.env.LLM_PROVIDER || "gemini";
-  const provider = PROVIDERS[name];
-  if (!provider) {
-    throw new Error(`Unknown LLM_PROVIDER "${name}". Supported providers: ${Object.keys(PROVIDERS).join(", ")}`);
-  }
-  return provider;
+  return PROVIDERS[config.LLM_PROVIDER];
 }
