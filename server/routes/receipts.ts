@@ -6,12 +6,8 @@ import { ensureSheet, appendItems } from "../lib/sheets.js";
 import { buildReceiptFilename } from "../lib/filename.js";
 import { AppError } from "../lib/errors.js";
 
-/**
- * Phase 1 keeps the synchronous request shape: the browser base64-encodes one
- * image and waits for extraction, Drive upload, and the Sheets append to
- * finish. Phase 3 replaces `imageBase64` with S3 keys and phase 4 moves the
- * work off the request path entirely.
- */
+// Phase 1 is synchronous: the browser posts one base64 image and waits for
+// extraction, Drive upload, and the Sheets append.
 const ProcessReceiptRequest = z.object({
   accessToken: z.string().min(1),
   imageBase64: z.string().min(1),

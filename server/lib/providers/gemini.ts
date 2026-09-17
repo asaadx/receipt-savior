@@ -6,12 +6,8 @@ import { config } from "../../config.js";
 
 type GeminiSchema = Record<string, unknown>;
 
-/**
- * Gemini's `responseSchema` only accepts a subset of OpenAPI 3.0 schema
- * (string/number/enum/object/array + a `nullable` flag, no `oneOf`/`$ref`).
- * This converts our canonical Zod schema into that dialect so the schema
- * itself never has to be hand-duplicated in Gemini's format.
- */
+// Gemini's responseSchema accepts only a subset of OpenAPI 3.0 (no oneOf/$ref),
+// so convert the canonical Zod schema instead of duplicating it.
 function fieldToGeminiSchema(field: z.ZodTypeAny): GeminiSchema {
   let inner = field;
   let nullable = false;
