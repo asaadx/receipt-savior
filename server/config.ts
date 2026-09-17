@@ -8,7 +8,7 @@ import { z } from "zod";
  * surfaced as a 500 on a user's receipt rather than as a startup error.
  */
 const EnvSchema = z.object({
-  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   LLM_PROVIDER: z.enum(["gemini", "openai"]).default("gemini"),
   GEMINI_API_KEY: z.string().min(1).optional(),
   GEMINI_MODEL: z.string().min(1).default("gemini-3.6-flash"),

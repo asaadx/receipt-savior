@@ -1,8 +1,49 @@
 import { createApp } from "./app.js";
 import { config } from "./config.js";
 
-const server = createApp().listen(config.PORT, () => {
-  console.log(`API listening on http://localhost:${config.PORT}`);
+/**
+ * Binds loopback rather than the wildcard address, which keeps the API off the
+ * LAN. Vite proxies to it from this same machine, so phone testing over
+ * `vite --host` still reaches it through the dev server.
+ *
+ * This is deliberately not a collision guard. The kernel refuses an
+ * overlapping bind in either direction -- wildcard over a loopback holder and
+ * loopback over a wildcard holder both raise EADDRINUSE -- so the bind address
+ * has no bearing on detecting a taken port. That is the job of the `listening`
+ * event and the error handler below.
+ */
+const HOST = "127.0.0.1";
+
+const server = createApp().listen(config.PORT, HOST);
+
+/**
+ * Reports readiness from the `listening` event rather than the callback that
+ * `app.listen()` accepts.
+ *
+ * Express invokes that callback even when the bind failed: inside it
+ * `server.address()` is null and `server.listening` is false. Verified against
+ * express 5.2.1; a plain `net.Server` does not behave this way. Trusting it
+ * printed "API listening on http://localhost:3000" while the port in fact
+ * belonged to VS Code's Live Preview, which answered this API's requests with
+ * files from an unrelated project. The `listening` event fires only on a real
+ * bind, and taking the port from `address()` means the log reports what was
+ * actually acquired.
+ */
+server.on("listening", () => {
+  const address = server.address();
+  const port = typeof address === "object" && address !== null ? address.port : config.PORT;
+  console.log(`API listening on http://${HOST}:${port}`);
+});
+
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `Port ${config.PORT} is already in use by another process.\n` +
+        `Set PORT in .env to a free port, then restart.`
+    );
+    process.exit(1);
+  }
+  throw err;
 });
 
 /**
